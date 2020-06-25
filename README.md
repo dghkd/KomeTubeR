@@ -1,7 +1,7 @@
 # KomeTubeR
 讀取Youtube影片聊天室留言 
 
-![](https://github.com/dghkd/KomeTube/raw/master/preview1.png)
+![](https://raw.githubusercontent.com/dghkd/KomeTubeR/master/preview1.png)
 
 ## 限制:  
 1. 直播存檔影片需要等Youtube可顯示聊天室重播後才可讀取  
