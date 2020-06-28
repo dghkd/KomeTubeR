@@ -434,10 +434,14 @@ namespace KomeTubeR.Kernel
             liveChatTextMessageRenderer.contextMenuAccessibility.accessibilityData.label = Convert.ToString(JsonHelper.TryGetValueByXPath(txtMsgRd, "contextMenuAccessibility.accessibilityData.label", ""));
             liveChatTextMessageRenderer.id = Convert.ToString(JsonHelper.TryGetValueByXPath(txtMsgRd, "id", ""));
             liveChatTextMessageRenderer.timestampUsec = Convert.ToInt64(JsonHelper.TryGetValueByXPath(txtMsgRd, "timestampUsec", 0));
-            for (int i = 0; i < txtMsgRd["message"]["runs"].Count; i++)
+            dynamic runs = JsonHelper.TryGetValueByXPath(txtMsgRd, "message.runs");
+            if (runs != null)
             {
-                string xPath = String.Format($"message.runs.{i.ToString()}.text");
-                liveChatTextMessageRenderer.message.simpleText += Convert.ToString(JsonHelper.TryGetValueByXPath(txtMsgRd, xPath, ""));
+                for (int i = 0; i < runs.Count; i++)
+                {
+                    string xPath = String.Format($"message.runs.{i.ToString()}.text");
+                    liveChatTextMessageRenderer.message.simpleText += Convert.ToString(JsonHelper.TryGetValueByXPath(txtMsgRd, xPath, ""));
+                }
             }
 
             var authorBadges = JsonHelper.TryGetValueByXPath(txtMsgRd, "authorBadges", null);
@@ -450,7 +454,6 @@ namespace KomeTubeR.Kernel
                     liveChatTextMessageRenderer.authorBadges.Add(badge);
                 }
             }
-            //liveChatTextMessageRenderer.contextMenuEndpoint
         }
 
         /// <summary>
