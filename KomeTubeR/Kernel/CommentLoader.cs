@@ -272,7 +272,7 @@ namespace KomeTubeR.Kernel
             RaiseStatusChanged(CommentLoaderStatus.ParseLiveChatHtml);
 
             //解析HTML
-            Match match = Regex.Match(htmlContent, "window\\[\"ytInitialData\"\\]\\s*=\\s*(.+?})(?:\"\\))?;", RegexOptions.Singleline);
+            Match match = Regex.Match(htmlContent, "var ytInitialData\\s*=\\s*(.+?})(?:\"\\))?;", RegexOptions.Singleline);
             if (!match.Success)
             {
                 Debug.WriteLine(String.Format("[ParseLiveChatHtml] 無法解析HTML. HTML content:{0}", htmlContent));
