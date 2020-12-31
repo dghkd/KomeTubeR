@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("dghkd")]
 [assembly: AssemblyProduct("KomeTubeR")]
-[assembly: AssemblyCopyright("Copyright ©  2020  dghkd.  All Rights Reserved")]
+[assembly: AssemblyCopyright("Copyright ©  2021  dghkd.  All Rights Reserved")]
 [assembly: AssemblyTrademark("dghkd")]
 [assembly: AssemblyCulture("")]
 
@@ -51,5 +51,5 @@ using System.Windows;
 // 您可以指定所有的值，也可以使用 '*' 將組建和修訂編號
 // 設為預設，如下所示:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.0.0.6280")]
-[assembly: AssemblyFileVersion("2.0.0.6280")]
+[assembly: AssemblyVersion("2.0.0.12310")]
+[assembly: AssemblyFileVersion("2.0.0.12310")]
