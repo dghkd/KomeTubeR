@@ -170,7 +170,7 @@ namespace KomeTubeR.Kernel
         /// <returns>回傳Youtube API 'get_live_chat'的位址</returns>
         private String GetLiveChatUrl(String continuation)
         {
-            String ret = String.Format(@"https://www.youtube.com/live_chat_replay/get_live_chat_replay?continuation={0}&pbj=1", continuation);
+            String ret = String.Format(@"https://www.youtube.com/live_chat_replay?continuation={0}", continuation);
 
             return ret;
         }
@@ -335,17 +335,22 @@ namespace KomeTubeR.Kernel
                     client.DefaultRequestHeaders.Add("User-Agent", @"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0");
                     resp = client.GetStringAsync(chatUrl).Result;
 
+                    //解析html
+                    Match match = Regex.Match(resp, "window\\[\"ytInitialData\"\\]\\s*=\\s*(.+?})(?:\"\\))?;", RegexOptions.Singleline);
+                    if (!match.Success)
+                    {
+                        Debug.WriteLine(String.Format("[GetComments] HTML解析失敗. HTML content:{0}", resp));
+                        RaiseError(CommentLoaderErrorCode.CanNotParseLiveChatHtml, resp);
+                        return null;
+                    }
+
                     //解析continuation供下次取得留言使用
-                    dynamic jsonData = JsonConvert.DeserializeObject<Dictionary<String, dynamic>>(resp);
-                    var data = jsonData["response"]["continuationContents"]["liveChatContinuation"]["continuations"][0]["liveChatReplayContinuationData"];
-                    //if (data == null)
-                    //{
-                    //    data = jsonData["response"]["continuationContents"]["liveChatContinuation"]["continuations"][0]["timedContinuationData"];
-                    //}
-                    continuation = Convert.ToString(JsonHelper.TryGetValue(data, "continuation", ""));
+                    String ytInitialData = match.Groups[1].Value;
+                    dynamic jsonData = JsonConvert.DeserializeObject<Dictionary<String, dynamic>>(ytInitialData);
+                    continuation = JsonHelper.TryGetValueByXPath(jsonData, "continuationContents.liveChatContinuation.continuations.0.liveChatReplayContinuationData.continuation", "");
 
                     //解析留言資料
-                    var commentActions = jsonData["response"]["continuationContents"]["liveChatContinuation"]["actions"];
+                    var commentActions = jsonData["continuationContents"]["liveChatContinuation"]["actions"];
                     ret = ParseComment(commentActions);
                 }
                 catch (Exception e)
