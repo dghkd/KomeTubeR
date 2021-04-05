@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.CommandWpf;
 
 using KomeTubeR.Kernel.YtLiveChatDataModel;
 
@@ -24,6 +25,8 @@ namespace KomeTubeR.ViewModel
         public CommentVM(CommentData data)
         {
             _data = data;
+
+            this.CmdOpenAuthorChannelUrl = new RelayCommand(OpenAuthorChannelUrl, this.AuthorChannelUrl != null);
         }
 
         #endregion Constructor
@@ -208,6 +211,30 @@ namespace KomeTubeR.ViewModel
             }
         }
 
+        public String AuthorChannelUrl
+        {
+            get
+            {
+                string url = @"https://www.youtube.com/channel/" + this.AuthorID;
+                return url;
+            }
+        }
+
         #endregion Public Member
+
+        #region Command
+
+        public RelayCommand CmdOpenAuthorChannelUrl { get; set; }
+
+        #endregion Command
+
+        #region Private Method
+
+        private void OpenAuthorChannelUrl()
+        {
+            System.Diagnostics.Process.Start(this.AuthorChannelUrl);
+        }
+
+        #endregion Private Method
     }
 }
