@@ -447,19 +447,39 @@ namespace KomeTubeR.Kernel
             liveChatTextMessageRenderer.id = Convert.ToString(JsonHelper.TryGetValueByXPath(txtMsgRd, "id", ""));
             liveChatTextMessageRenderer.timestampUsec = Convert.ToInt64(JsonHelper.TryGetValueByXPath(txtMsgRd, "timestampUsec", 0));
 
+            //留言包含自訂表情符號或空格時runs陣列會分割成多元素
             dynamic runs = JsonHelper.TryGetValueByXPath(txtMsgRd, "message.runs");
             if (runs != null)
             {
                 for (int i = 0; i < runs.Count; i++)
                 {
-                    string xPath = String.Format($"message.runs.{i.ToString()}.text");
-                    liveChatTextMessageRenderer.message.simpleText += Convert.ToString(JsonHelper.TryGetValueByXPath(txtMsgRd, xPath, ""));
+                    dynamic run = runs[i];
+                    Runs r = new Runs();
+
+                    //解析一般文字元素
+                    string text = ParseText(run);
+                    if (text != "")
+                    {
+                        r.text = text;
+                        liveChatTextMessageRenderer.message.runs.Add(r);
+                    }
+
+                    //解析Emoji元素
+                    Emoji emj = ParseEmoji(run);
+                    if (emj != null)
+                    {
+                        r.emoji = emj;
+                        liveChatTextMessageRenderer.message.runs.Add(r);
+                    }
                 }
             }
+            else
+                liveChatTextMessageRenderer.message.simpleText = "";
 
             var authorBadges = JsonHelper.TryGetValueByXPath(txtMsgRd, "authorBadges", null);
             if (authorBadges != null)
             {
+                //留言者可能擁有多個徽章 (EX:管理員、會員)
                 for (int i = 0; i < authorBadges.Count; i++)
                 {
                     AuthorBadge badge = new AuthorBadge();
@@ -490,6 +510,62 @@ namespace KomeTubeR.Kernel
                 thumb.height = JsonHelper.TryGetValue(authorPhotoData[i], "height", "");
                 ret.Add(thumb);
             }
+
+            return ret;
+        }
+
+        /// <summary>
+        /// 解析一般文字元素
+        /// </summary>
+        /// <param name="run">json data</param>
+        /// <returns>回傳留言文字。若json data內非一般文字則回傳空字串</returns>
+        private string ParseText(dynamic run)
+        {
+            string xPath = "text";
+            return Convert.ToString(JsonHelper.TryGetValueByXPath(run, xPath, ""));
+        }
+
+        /// <summary>
+        /// 解析Emoji元素
+        /// </summary>
+        /// <param name="run">json data</param>
+        /// <returns>回傳留言的Emoji物件。若Json data內非Emoji則回傳null</returns>
+        private Emoji ParseEmoji(dynamic run)
+        {
+            Emoji ret = new Emoji();
+            dynamic emojiObj = JsonHelper.TryGetValue(run, "emoji");
+
+            if (emojiObj == null)
+                return null;
+
+            ret.emojiId = Convert.ToString(JsonHelper.TryGetValue(emojiObj, "emojiId", ""));
+
+            dynamic shortcuts = JsonHelper.TryGetValue(emojiObj, "shortcuts");
+            for (int i = 0; i < shortcuts.Count; i++)
+            {
+                ret.shortcuts.Add(Convert.ToString(shortcuts[i]));
+            }
+
+            dynamic searchTerms = JsonHelper.TryGetValue(emojiObj, "searchTerms");
+            for (int i = 0; i < searchTerms.Count; i++)
+            {
+                ret.searchTerms.Add(Convert.ToString(searchTerms[i]));
+            }
+
+            ret.isCustomEmoji = Convert.ToBoolean(JsonHelper.TryGetValue(emojiObj, "isCustomEmoji", false));
+
+            dynamic thumbsObj = JsonHelper.TryGetValueByXPath(emojiObj, "image.thumbnails");
+            for (int i = 0; i < thumbsObj.Count; i++)
+            {
+                Thumbnails thumbs = new Thumbnails();
+                thumbs.url = Convert.ToString(JsonHelper.TryGetValueByXPath(thumbsObj, $"{i.ToString()}.url"));
+                thumbs.width = Convert.ToInt32(JsonHelper.TryGetValueByXPath(thumbsObj, $"{i.ToString()}.width", 0));
+                thumbs.height = Convert.ToInt32(JsonHelper.TryGetValueByXPath(thumbsObj, $"{i.ToString()}.height", 0));
+
+                ret.image.thumbnails.Add(thumbs);
+            }
+
+            ret.image.accessibility.accessibilityData.label = Convert.ToString(JsonHelper.TryGetValueByXPath(emojiObj, "image.accessibility.accessibilityData.label", ""));
 
             return ret;
         }

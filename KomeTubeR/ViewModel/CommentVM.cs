@@ -141,15 +141,47 @@ namespace KomeTubeR.ViewModel
         {
             get
             {
+                string msgText = "";
                 if (_data.addChatItemAction.item.IsPaidMessage)
                 {
+                    msgText = FormatMessageText(_data.addChatItemAction.item.liveChatPaidMessageRenderer.message);
+                    _data.addChatItemAction.item.liveChatPaidMessageRenderer.message.simpleText = msgText;
+
                     return String.Format("{0} {1}",
                         _data.addChatItemAction.item.liveChatPaidMessageRenderer.purchaseAmountText.simpleText,
                         _data.addChatItemAction.item.liveChatPaidMessageRenderer.message.simpleText);
                 }
                 else
                 {
+                    msgText = FormatMessageText(_data.addChatItemAction.item.liveChatTextMessageRenderer.message);
+                    _data.addChatItemAction.item.liveChatTextMessageRenderer.message.simpleText = msgText;
+
                     return _data.addChatItemAction.item.liveChatTextMessageRenderer.message.simpleText;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 留言內容全文字版，表情符號改由shortcut表示，而非圖片網址
+        /// </summary>
+        public string ContentMessage
+        {
+            get
+            {
+                string content = "";
+                if (_data.addChatItemAction.item.IsPaidMessage)
+                {
+                    content = FormatContentMessage(_data.addChatItemAction.item.liveChatPaidMessageRenderer.message);
+
+                    return String.Format("{0} {1}",
+                        _data.addChatItemAction.item.liveChatPaidMessageRenderer.purchaseAmountText.simpleText,
+                        content);
+                }
+                else
+                {
+                    content = FormatContentMessage(_data.addChatItemAction.item.liveChatTextMessageRenderer.message);
+
+                    return content;
                 }
             }
         }
@@ -229,6 +261,80 @@ namespace KomeTubeR.ViewModel
         #endregion Command
 
         #region Private Method
+
+        private string FormatMessageText(Message msg)
+        {
+            string ret = "";
+            for (int i = 0; i < msg.runs.Count; i++)
+            {
+                Runs r = msg.runs[i];
+                ret += r.text;
+                ret += FormatEmojiImage(r.emoji);
+            }
+
+            return ret;
+        }
+
+        private string FormatContentMessage(Message msg)
+        {
+            string ret = "";
+            for (int i = 0; i < msg.runs.Count; i++)
+            {
+                Runs r = msg.runs[i];
+                ret += r.text;
+                if (r.emoji.shortcuts.Count > 0)
+                {
+                    //判斷表情符號類型
+                    if (r.emoji.isCustomEmoji
+                        && r.emoji.shortcuts.Count >= 2)
+                    {
+                        //頻道自訂表符
+                        ret += r.emoji.shortcuts[1];
+                    }
+                    else if (r.emoji.isCustomEmoji
+                        && r.emoji.shortcuts.Count < 2)
+                    {
+                        //YT通用自訂表符
+                        ret += r.emoji.shortcuts[0];
+                    }
+                    else
+                    {
+                        //文字符號表符
+                        ret += r.emoji.emojiId;
+                    }
+                }
+            }
+
+            return ret;
+        }
+
+        private string FormatEmojiImage(Emoji emoji)
+        {
+            if (emoji == null)
+            {
+                return "";
+            }
+
+            string ret = "";
+            if (emoji.isCustomEmoji)
+            {
+                Thumbnails thumb = emoji.image.thumbnails.ElementAtOrDefault(0);
+                if (thumb != null)
+                {
+                    string url = thumb.url;
+                    int w = thumb.width;
+                    int h = thumb.height;
+
+                    ret = $"[img source='{url}' width={w} height={h}]";
+                }
+            }
+            else
+            {
+                ret = emoji.emojiId;
+            }
+
+            return ret;
+        }
 
         private void OpenAuthorChannelUrl()
         {

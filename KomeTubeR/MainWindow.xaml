@@ -176,7 +176,7 @@
                                          Background="Transparent"
                                          BorderThickness="0"
                                          IsReadOnly="True"
-                                         Text="{Binding Message, Mode=OneWay}"
+                                         Text="{Binding ContentMessage, Mode=OneWay}"
                                          TextWrapping="Wrap" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
