@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Documents;
 
 using Newtonsoft;
 using Newtonsoft.Json;
@@ -27,6 +28,8 @@ namespace KomeTubeR.Kernel
 
         private Task _mainTask;
         private CancellationTokenSource _mainTaskCancelTS;
+
+        private const string DefaultUserAgent = @"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0";
 
         #endregion Private Member
 
@@ -259,7 +262,7 @@ namespace KomeTubeR.Kernel
             {
                 try
                 {
-                    client.DefaultRequestHeaders.Add("User-Agent", @"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0");
+                    client.DefaultRequestHeaders.Add("User-Agent", DefaultUserAgent);
                     htmlContent = client.GetStringAsync(liveChatUrl).Result;
                 }
                 catch (Exception e)
@@ -287,7 +290,8 @@ namespace KomeTubeR.Kernel
             {
                 jsonData = JsonConvert.DeserializeObject<Dictionary<String, dynamic>>(ytInitialData);
 
-                String data = Convert.ToString(jsonData["contents"]["twoColumnWatchNextResults"]["conversationBar"]["liveChatRenderer"]["header"]["liveChatHeaderRenderer"]["viewSelector"]["sortFilterSubMenuRenderer"]["subMenuItems"][1]["continuation"]["reloadContinuationData"]["continuation"]);
+                String data = Convert.ToString(jsonData["contents"]["twoColumnWatchNextResults"]["conversationBar"]["liveChatRenderer"]["continuations"][0]["reloadContinuationData"]["continuation"]);
+
                 if (data == null)
                 {
                     data = jsonData["contents"]["liveChatRenderer"]["continuations"][0]["timedContinuationData"];
@@ -332,11 +336,11 @@ namespace KomeTubeR.Kernel
                 try
                 {
                     //取得聊天室留言
-                    client.DefaultRequestHeaders.Add("User-Agent", @"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0");
+                    client.DefaultRequestHeaders.Add("User-Agent", DefaultUserAgent);
                     resp = client.GetStringAsync(chatUrl).Result;
 
                     //解析html
-                    Match match = Regex.Match(resp, "window\\[\"ytInitialData\"\\]\\s*=\\s*(.+?})(?:\"\\))?;", RegexOptions.Singleline);
+                    Match match = Regex.Match(resp, @"window\[""ytInitialData""\]\s*=\s*(.*?)(?=<script|</script)", RegexOptions.Singleline);
                     if (!match.Success)
                     {
                         Debug.WriteLine(String.Format("[GetComments] HTML解析失敗. HTML content:{0}", resp));
@@ -346,6 +350,8 @@ namespace KomeTubeR.Kernel
 
                     //解析continuation供下次取得留言使用
                     String ytInitialData = match.Groups[1].Value;
+                    ytInitialData = ytInitialData.EndsWith(";") ? ytInitialData.Substring(0, ytInitialData.Length - 1) : ytInitialData;
+
                     dynamic jsonData = JsonConvert.DeserializeObject<Dictionary<String, dynamic>>(ytInitialData);
                     continuation = JsonHelper.TryGetValueByXPath(jsonData, "continuationContents.liveChatContinuation.continuations.0.liveChatReplayContinuationData.continuation", "");
 
@@ -398,6 +404,7 @@ namespace KomeTubeR.Kernel
                         ParsePaidMessage(cmt.addChatItemAction.item.liveChatPaidMessageRenderer, paidMsgRd);
                     }
                     cmt.addChatItemAction.clientId = Convert.ToString(JsonHelper.TryGetValueByXPath(data[0], "addChatItemAction.clientId", ""));
+
                     cmt.videoOffsetTimeMsec = new TimeSpan(0, 0, 0, 0, Convert.ToInt32(JsonHelper.TryGetValueByXPath(commentActions[i], "replayChatItemAction.videoOffsetTimeMsec")));
 
                     ret.Add(cmt);
@@ -439,6 +446,7 @@ namespace KomeTubeR.Kernel
             liveChatTextMessageRenderer.contextMenuAccessibility.accessibilityData.label = Convert.ToString(JsonHelper.TryGetValueByXPath(txtMsgRd, "contextMenuAccessibility.accessibilityData.label", ""));
             liveChatTextMessageRenderer.id = Convert.ToString(JsonHelper.TryGetValueByXPath(txtMsgRd, "id", ""));
             liveChatTextMessageRenderer.timestampUsec = Convert.ToInt64(JsonHelper.TryGetValueByXPath(txtMsgRd, "timestampUsec", 0));
+
             dynamic runs = JsonHelper.TryGetValueByXPath(txtMsgRd, "message.runs");
             if (runs != null)
             {
